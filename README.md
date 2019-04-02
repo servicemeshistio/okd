@@ -158,7 +158,9 @@ cat /etc/resolv.conf
 nameserver 192.168.142.102
 ```
 
-## Giving interface & not allowing NM_CONTROLLED to YES. This is contrary to what OpenShift documentation says, which assumes that there will be a dedicated nameserver outside the cluster. This is not the case with us where we want to build a single VM and our wild card name resolution for apps should happen inside the VM only. 
+## Network Interface Configuration
+
+The documentation says that we should keep NM_CONTROLLED to YES. This is done so that to automate DNS configuration. This is not the case with us where we want to build a single VM and wild card name resolution for apps should happen inside the VM only. 
 
 Edit `ifcfg-eth0` for `NM_CONTROLLED="no"`. The `peerdns` is set to `yes` and DNS is set to itself IP address as we are using `dnsmasq` on port 53. Openshift uses `skydns` at port `8053`, so our `dnsmasq` should forward `cluster.local` domain queries to `skydns`.
 
@@ -485,6 +487,7 @@ oc new-project istio-lab
 ```
 curl -L https://raw.githubusercontent.com/istio/istio/master/samples/bookinfo/platform/kube/bookinfo.yaml -o bookinfo.yaml
 
+oc adm policy add-scc-to-user anyuid system:serviceaccount:istio-lab:default
 oc adm policy add-scc-to-user privileged -z default -n istio-lab
 oc apply -f bookinfo.yaml 
 ```
@@ -502,13 +505,13 @@ service/productpage created
 deployment.extensions/productpage-v1 created
 
 [root@osc02 istio]# oc get pods
-NAME                              READY     STATUS              RESTARTS   AGE
-details-v1-68868454f5-kqkqz       0/1       ContainerCreating   0          6s
-productpage-v1-5cb458d74f-t5b2d   0/1       ContainerCreating   0          6s
-ratings-v1-76f4c9765f-c574q       0/1       ContainerCreating   0          6s
-reviews-v1-56f6855586-dg7nf       0/1       ContainerCreating   0          6s
-reviews-v2-65c9df47f8-gwcs5       0/1       ContainerCreating   0          6s
-reviews-v3-6cf47594fd-lknx8       0/1       ContainerCreating   0          6s
+NAME                              READY     STATUS    RESTARTS   AGE
+details-v1-68868454f5-kqkqz       1/1       Running   0          19h
+productpage-v1-5cb458d74f-pl2dc   1/1       Running   0          44s
+ratings-v1-76f4c9765f-c574q       1/1       Running   0          19h
+reviews-v1-56f6855586-l77fw       1/1       Running   0          13s
+reviews-v2-65c9df47f8-nkrdv       1/1       Running   0          13s
+reviews-v3-6cf47594fd-dfcdj       1/1       Running   0          13s
 ```
 
 ### Download and install Linkerd bookinfo application
