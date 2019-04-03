@@ -484,7 +484,14 @@ ansible-playbook -i inventory.ini openshift-ansible/playbooks/prerequisites.yml
 
 ## Copy `/etc/resolv.conf` since we have NM_CONTROLLED=no in our case
 
-Copy `/etc/resolv.conf` to `/etc/origin/node/`
+Make sure that your `/etc/resolve.conf` is as follows.
+
+```bash
+# cat /etc/resolv.conf
+nameserver 192.168.142.102
+```
+
+And, then copy `/etc/resolv.conf` to `/etc/origin/node/`
 
 ```
 mkdir -p /etc/origin/node
