@@ -36,6 +36,10 @@ If ping does not succeed, it is quite possible that the network address of VMnet
 Either disable firewall or allow access to ssh
 
 ```bash
+systemctl is-enabled firewalld
+```
+If enabled, then run the following:
+```bash
 firewall-cmd --add-service=ssh --permanent 
 firewall-cmd --reload
 ```
@@ -71,6 +75,15 @@ ssh 192.168.142.102 date
 ## Set selinux
 
 SELinux requirements
+
+Check if `selinux` is enabled or not.
+
+```bash
+getenforce
+Enforcing
+```
+
+If above shows `disabled`, then enable `selinux`.
 
 Security-Enhanced Linux (SELinux) must be enabled on all of the servers before installing OpenShift Container Platform or the installer will fail. Also, configure `SELINUX=enforcing` and `SELINUXTYPE=targeted` in the `/etc/selinux/config` file and then reboot the machine.
 
@@ -114,9 +127,17 @@ address=/.apps.servicemesh.local/192.168.142.102
 server=/17.30.172.in-addr.arpa/127.0.0.1#8053
 ```
 
+Reload dnsmasq
+
+```bash
+systemctl restart dnsmasq
+```
+
 Reverse queries are for the OpenShift SDN address range. The SDN CIDR range can be identified by looking `serviceNetworkCIDR` in `/etc/origin/master/master-config.yaml` file.
 
 Local hosts file `/etc/dnsmasq.hosts`
+
+Edit your `/etc/dnsmasq.hosts` as per entries below.
 
 ```bash
 # cat /etc/dnsmasq.hosts
@@ -189,13 +210,19 @@ DNS="192.168.142.102"
 IPV6_PRIVACY="no"
 ```
 
+After making changes, restart `network`.
+```
+systemctl restart network
+```
+
+
+
 ### Check interfaces are in control of NM
 
 ```bash
 # nmcli device
 DEVICE   TYPE      STATE      CONNECTION 
-eth0     ethernet  unmanaged  --        
-docker0  bridge    connected  docker0    
+eth0     ethernet  unmanaged  --          
 lo       loopback  unmanaged  --  
 ```
 
@@ -239,6 +266,21 @@ to
 registries = [172.30.0.0/16]
 ```
 
+Also Edit `/etc/docker/daemon.json` and add the entry as shown.
+
+```json
+{
+    "insecure-registries" : [ "172.30.0.0/16" ]
+}
+```
+
+Restart Docker
+
+```
+systemctl daemon-reload
+systemctl restart docker
+```
+
 The address `172.30.0.0` is the `serviceSubnet` defined in `/etc/origin/master/master-config.yaml`.
 
 Install OpenShift Origin, which is the Open Source implementation of Red Hat OpenShift.
@@ -249,6 +291,7 @@ The latest version is 3.11 at the time of writing.
 
 To install OpenShift in single VM, multiple options are available.
 
+Please choose method - 3 for install. You can practice method - 2.
 
 ## Method - 1 : Install Using MiniShift
 
@@ -349,13 +392,16 @@ yum-config-manager --disable epel
 yum -y --enablerepo=epel install pyOpenSSL
 ```
 
-Consult this [link](https://github.com/gshipley/installcentos) for the inventory file for a single VM and using CentOS.
+Reference purpose only: You can skip to Final `inventory.ini` and just copy the file. You do not have to download the inventory.ini.
+
+> Consult this [link](https://github.com/gshipley/installcentos) for the inventory file for a single VM and using CentOS.
 
 ```bash
+cd
 curl -o inventory.download https://raw.githubusercontent.com/gshipley/installcentos/master/inventory.ini
 ```
 
-Define variable so that they can be replaced in the inventory file.
+> Define variable so that they can be replaced in the inventory file.
 
 ```bash
 export IP=192.168.142.102
@@ -365,15 +411,18 @@ export LOGGING=false
 export DOMAIN=servicemesh.local
 export API_PORT=8443
 envsubst < inventory.download > inventory.ini
-mkdir -p /etc/origin/master/
-touch /etc/origin/master/htpasswd
 ```
 
 After taking above inventory file, this is final inventory file that we used to install a single VM OpenShift cluster without having to use an external DNS server.
 
 We disabled catalog service feature by setting `openshift_enable_service_catalog=False` to `false` in the inventory file. We will install it after basic OKD install.
 
-Final - Inventory file after environment substitution
+Final - Inventory file after environment substitution and by making some changes. Copy this file.
+
+```
+mkdir -p /etc/origin/master/
+touch /etc/origin/master/htpasswd
+```
 
 ```bash
 # cat inventory.ini 
@@ -459,7 +508,7 @@ ansible-playbook -i inventory.ini openshift-ansible/playbooks/openshift-service-
 
 Now, the above will fail to bring the `apiserver` due to `etcd` readiness failure. This is due to hostname of etcd server getting messed up due to things that I do not know. 
 
-But, when I change the etcd_servers in `oc edit ds apiserver` from FQDN to IP address, it worked fine.
+But, when I change the `etcd_servers` in `oc -n kube-service-catalog edit ds apiserver` from FQDN to IP address, it worked fine.
 
 Changed this
 ```
