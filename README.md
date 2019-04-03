@@ -542,7 +542,7 @@ ansible-playbook -i inventory.ini openshift-ansible/playbooks/openshift-service-
 
 Now, the above will fail to bring the `apiserver` due to `etcd` readiness failure. This is due to hostname of etcd server getting messed up due to things that I do not know. 
 
-But, when I change the `etcd_servers` in `oc -n kube-service-catalog edit ds apiserver` from FQDN to IP address, it worked fine.
+But, when I change the `etcd-servers` in `oc -n kube-service-catalog edit ds apiserver` from FQDN to IP address, it worked fine.
 
 Changed this
 ```
