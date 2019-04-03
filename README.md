@@ -581,6 +581,7 @@ deployment.extensions/books created
 deployment.extensions/traffic created
 ```
 
+You are done now. The following commands are for reference purpose only.
 
 ## Uninstall
 
