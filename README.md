@@ -506,6 +506,33 @@ Install can be done in a single step or by taking individual steps as above link
 ```bash
 ansible-playbook -i inventory.ini openshift-ansible/playbooks/deploy_cluster.yml 
 ```
+### Check pods status
+
+```
+oc get pods --all-namespaces
+Unable to connect to the server: x509: certificate is valid for 172.30.0.1, 192.168.142.102, not 127.0.0.1
+```
+
+If you get the above error message, run the following commands to fix the kube `config` file.
+
+``` bash
+ cd 
+ cd .kube/
+ mv config config_old    #take a backup of the config
+ cp /etc/origin/master/admin.kubeconfig ~/.kube/config
+ oc status --config=/etc/origin/master/admin.kubeconfig
+```
+`oc get pods --all-namespace` should work now
+
+## Add user id and password
+
+```bash
+htpasswd -b /etc/origin/master/htpasswd admin admin
+
+# Grant cluster admin role to user admin 
+oc adm policy add-cluster-role-to-user cluster-admin admin
+oc login -u admin -p admin https://osc02.servicemesh.local:8443
+```
 
 ## Install Service Catalog
 
@@ -601,13 +628,7 @@ If Origin (OKD) needs to be uninstalled, run the command.
 
 The switch `-e openshift_uninstall_images=False` allows to retain the docker images downloaded. Without the switch, the docker images are also deleted.
 
-## Add user id and password
 
-```bash
-htpasswd -b /etc/origin/master/htpasswd admin admin
-oc adm policy add-cluster-role-to-user cluster-admin admin
-oc login -u admin -p admin https://osc02.servicemesh.local:8443
-```
 
 ## Miscellaneous Commands
 
